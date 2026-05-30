@@ -340,8 +340,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
         fetch(`/api/itunes?q=${encodeURIComponent(`${song.title} ${song.artist}`)}`)
           .then(r => r.json())
           .then(data => {
-            const match = data.results?.find(r => r.previewUrl);
-            previewCache.current[song.id] = match?.previewUrl || "";
+            previewCache.current[song.id] = data.previewUrl || "";
           })
           .catch(() => { previewCache.current[song.id] = ""; });
       }, i * 200);
