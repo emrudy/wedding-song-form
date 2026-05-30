@@ -284,6 +284,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
   const [itunesLoading, setItunesLoading] = useState(false);
   const previewCache = useRef({});
 
+  // Normalize accented characters for better search matching
+  const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
   const fetchItunesPreview = async (song) => {
     if (previewCache.current[song.id] !== undefined) {
       setItunesUrl(previewCache.current[song.id] || null);
@@ -294,22 +297,28 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     setItunesLoading(true);
     setItunesUrl(null);
 
+    const title = song.title || "";
+    const artist = song.artist || "";
+    const strippedTitle = title.split(/[-–(,]/)[0].trim();
+
+    // Try multiple queries — serverless function handles iTunes + Deezer fallback
     const searches = [
-      `${song.title} ${song.artist}`,
-      song.title,
-      song.title.split(/[-–(,]/)[0].trim(),
+      `${title} ${artist}`,
+      `${normalize(title)} ${normalize(artist)}`,
+      title,
+      normalize(title),
+      strippedTitle,
     ];
 
     try {
       for (const query of searches) {
-        // Call our own Vercel serverless proxy — fast, no CORS issues
+        if (!query.trim()) continue;
         const res = await fetch(`/api/itunes?q=${encodeURIComponent(query)}`);
         if (!res.ok) continue;
         const data = await res.json();
-        const match = data.results?.find(r => r.previewUrl);
-        if (match?.previewUrl) {
-          previewCache.current[song.id] = match.previewUrl;
-          setItunesUrl(match.previewUrl);
+        if (data.previewUrl) {
+          previewCache.current[song.id] = data.previewUrl;
+          setItunesUrl(data.previewUrl);
           setItunesLoading(false);
           return;
         }
