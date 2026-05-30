@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
-const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
-const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
 
 const SECTIONS = [
   {
@@ -278,17 +278,53 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     setSubmitting(false);
   };
 
+  // ── iTunes preview for mobile ──────────────────────────────────────────
+  const audioRef = useRef(null);
+  const [itunesUrl, setItunesUrl] = useState(null);
+  const [itunesLoading, setItunesLoading] = useState(false);
+
+  const fetchItunesPreview = async (song) => {
+    setItunesLoading(true);
+    setItunesUrl(null);
+    try {
+      const q = encodeURIComponent(`${song.title} ${song.artist}`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=5`);
+      const data = await res.json();
+      const match = data.results?.find(r => r.previewUrl);
+      if (match?.previewUrl) setItunesUrl(match.previewUrl);
+    } catch(e) { console.error("iTunes fetch failed", e); }
+    setItunesLoading(false);
+  };
+
+  // Stop audio when playingId cleared
+  useEffect(() => {
+    if (!playingId) {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+      setItunesUrl(null);
+    }
+  }, [playingId]);
+
+  // Play when iTunes URL is ready
+  useEffect(() => {
+    if (itunesUrl && audioRef.current) {
+      audioRef.current.src = itunesUrl;
+      audioRef.current.play().catch(e => console.error("Audio play failed", e));
+    }
+  }, [itunesUrl]);
+
   // ── Render helpers ─────────────────────────────────────────────────────
   const visibleSections = SECTIONS.filter(s => !s.optional || includecocktail);
   const playingSong = songs.find(s => s.id === playingId);
   const playingYtId = playingSong ? getYouTubeId(playingSong.youtubeUrl) : null;
 
-  const SongRow = ({ song, selected, onClick, isSingle }) => {
+  const SongRow = ({ song, selected, onClick, isSingle, isMobile }) => {
     const ytId = getYouTubeId(song.youtubeUrl);
     const isPlaying = playingId === song.id;
     const handlePlay = (e) => {
       e.stopPropagation();
-      setPlayingId(isPlaying ? null : song.id);
+      if (isPlaying) { setPlayingId(null); return; }
+      setPlayingId(song.id);
+      if (isMobile) fetchItunesPreview(song);
     };
     return (
       <div onClick={onClick}
@@ -491,7 +527,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                               ? (selections[section.id]||[]).includes(song.id)
                               : selections[section.id] === song.id;
                             return (
-                              <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi}
+                              <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi} isMobile={isMobile}
                                 onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
                               />
                             );
@@ -611,8 +647,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           </div>
         </footer>
 
-        {/* ── Hidden audio iframe ── */}
-        {playingId && playingYtId && (
+        {/* ── Native audio element for mobile iTunes preview ── */}
+        <audio ref={audioRef} style={{display:"none"}} onEnded={()=>setPlayingId(null)}/>
+
+        {/* ── Hidden YouTube iframe for desktop ── */}
+        {!isMobile && playingId && playingYtId && (
           <iframe
             key={playingYtId}
             src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
@@ -623,7 +662,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
         )}
 
         {/* ── Now playing indicator ── */}
-        {playingId && playingYtId && (
+        {playingId && (playingYtId || isMobile) && (
           <div style={{position:"fixed",bottom:isMobile?16:24,right:isMobile?16:24,zIndex:999,background:tk.surface,borderRadius:14,boxShadow:"0 8px 40px rgba(0,0,0,0.18)",border:`1px solid ${tk.border}`,overflow:"hidden",width:isMobile?280:320}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:tk.accent,gap:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
@@ -643,7 +682,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
               </button>
             </div>
             <div style={{padding:"8px 14px",background:tk.surface2}}>
-              <div style={{fontSize:11,color:tk.textMuted,fontStyle:"italic",textAlign:"center"}}>Reference recording only — live violin performance at your wedding</div>
+              <div style={{fontSize:11,color:tk.textMuted,fontStyle:"italic",textAlign:"center"}}>
+                {isMobile && itunesLoading ? "Loading preview…" : "Reference recording only — live violin performance at your wedding"}
+              </div>
             </div>
           </div>
         )}
