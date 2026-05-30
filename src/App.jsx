@@ -278,7 +278,40 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     setSubmitting(false);
   };
 
-  // ── Render helpers ─────────────────────────────────────────────────────
+  const playerRef = useRef(null);
+  const ytPlayerRef = useRef(null);
+  const ytApiReady = useRef(false);
+
+  // Load YouTube IFrame API once
+  useEffect(() => {
+    if (window.YT) { ytApiReady.current = true; return; }
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+    window.onYouTubeIframeAPIReady = () => { ytApiReady.current = true; };
+  }, []);
+
+  // When playingId changes, load and play the new video
+  useEffect(() => {
+    if (!playingId || !playingYtId) {
+      if (ytPlayerRef.current) { try { ytPlayerRef.current.stopVideo(); } catch(e){} }
+      return;
+    }
+    const initPlayer = () => {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.loadVideoById(playingYtId); } catch(e){}
+      } else if (playerRef.current) {
+        ytPlayerRef.current = new window.YT.Player(playerRef.current, {
+          height:"1", width:"1",
+          videoId: playingYtId,
+          playerVars: { autoplay:1, playsinline:1, controls:0, rel:0, modestbranding:1 },
+          events: { onReady: (e) => { try { e.target.playVideo(); } catch(err){} } }
+        });
+      }
+    };
+    if (ytApiReady.current && window.YT?.Player) initPlayer();
+    else { const t = setInterval(() => { if (ytApiReady.current && window.YT?.Player) { clearInterval(t); initPlayer(); } }, 100); return () => clearInterval(t); }
+  }, [playingId, playingYtId]);
   const visibleSections = SECTIONS.filter(s => !s.optional || includecocktail);
   const playingSong = songs.find(s => s.id === playingId);
   const playingYtId = playingSong ? getYouTubeId(playingSong.youtubeUrl) : null;
@@ -611,19 +644,12 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           </div>
         </footer>
 
-        {/* ── YouTube IFrame API script ── */}
-        {playingId && playingYtId && (
-          <iframe
-            key={playingYtId}
-            id="yt-audio-player"
-            src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
-            style={{position:"fixed",bottom:-1000,left:-1000,width:1,height:1,border:"none",pointerEvents:"none",opacity:0}}
-            allow="autoplay; encrypted-media"
-            title="audio"
-          />
-        )}
+        {/* ── Persistent YouTube player div (invisible, audio only) ── */}
+        <div style={{position:"fixed",left:"-9999px",top:"-9999px",width:1,height:1,overflow:"hidden"}} aria-hidden="true">
+          <div ref={playerRef}/>
+        </div>
 
-        {/* ── Now playing indicator (no video, just a slim bar) ── */}
+        {/* ── Now playing indicator ── */}
         {playingId && playingYtId && (
           <div style={{position:"fixed",bottom:isMobile?16:24,right:isMobile?16:24,zIndex:999,background:tk.surface,borderRadius:14,boxShadow:"0 8px 40px rgba(0,0,0,0.18)",border:`1px solid ${tk.border}`,overflow:"hidden",width:isMobile?280:320}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:tk.accent,gap:10}}>
