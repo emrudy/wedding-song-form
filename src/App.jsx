@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
+const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
+const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
 
 const SECTIONS = [
   {
@@ -674,24 +674,9 @@ ${includecocktail ? `Cocktail Hour (${trustMeLabel("cocktailhour") || formatMins
                           </div>
                         )}
 
-                        {/* Song list — hidden when trust me is selected */}
-                        {!trustMe[section.id] && (
-                          <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
-                            {songs.map(song => {
-                              const selected = section.multi
-                                ? (selections[section.id]||[]).includes(song.id)
-                                : selections[section.id] === song.id;
-                              return (
-                                <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi} isMobile={isMobile}
-                                  onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
-                                />
-                              );
-                            })}
-                          </div>
-                        )}
-
+                        {/* Custom request — moved to top, before song list */}
                         {section.allowCustom && (
-                          <div style={{margin:"0 16px 16px",background:tk.surface2,borderRadius:12,padding:"14px 16px",border:`1.5px solid ${customRequests[section.id]?.trim()?tk.accent:tk.border}`}}>
+                          <div style={{margin:"14px 16px 0",background:tk.surface2,borderRadius:12,padding:"14px 16px",border:`1.5px solid ${customRequests[section.id]?.trim()?tk.accent:tk.border}`}}>
                             <div style={{fontSize:12,fontWeight:600,color:tk.textSub,textTransform:"uppercase",letterSpacing:0.4,marginBottom:6}}>Don't See The Song You Want?</div>
                             <div style={{fontSize:13,color:tk.textSub,marginBottom:10,lineHeight:1.5}}>Enter a custom song request below. {VIOLINIST_NAME} will review it and be in touch to discuss whether it can be arranged for violin.</div>
                             <input value={customRequests[section.id]||""}
@@ -705,6 +690,22 @@ ${includecocktail ? `Cocktail Hour (${trustMeLabel("cocktailhour") || formatMins
                             {customRequests[section.id]?.trim() && !selections[section.id] && (
                               <div style={{fontSize:12,color:tk.green,marginTop:6}}>✓ Custom request noted</div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Song list — hidden when trust me is selected */}
+                        {!trustMe[section.id] && (
+                          <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                            {songs.map(song => {
+                              const selected = section.multi
+                                ? (selections[section.id]||[]).includes(song.id)
+                                : selections[section.id] === song.id;
+                              return (
+                                <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi} isMobile={isMobile}
+                                  onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
+                                />
+                              );
+                            })}
                           </div>
                         )}
                       </>}
