@@ -479,13 +479,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
               <h2 style={{fontFamily:"'SF Pro Display',-apple-system,'DM Sans',sans-serif",fontSize:isMobile?26:34,fontWeight:500,color:tk.text,marginBottom:6}}>Tell Me About Your Day</h2>
               <p style={{fontSize:14,color:tk.textSub,marginBottom:28,lineHeight:1.6}}>This helps me personalize your experience and keep your selections organized.</p>
 
-              <div style={{background:tk.surface,borderRadius:18,padding:isMobile?"20px":"28px",border:`1px solid ${tk.border}`,boxShadow:tk.shadow,marginBottom:24,overflow:"hidden"}}>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,width:"100%",overflow:"hidden"}}>
+              <div style={{background:tk.surface,borderRadius:18,padding:isMobile?"20px":"28px",border:`1px solid ${tk.border}`,boxShadow:tk.shadow,marginBottom:24}}>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,width:"100%"}}>
                   <FormField label="Your Name" value={clientName} onChange={setClientName} placeholder="e.g. Sarah Johnson" required tk={tk} isMobile={isMobile}/>
                   <FormField label="Partner's Name" value={partnerName} onChange={setPartnerName} placeholder="e.g. James Williams" tk={tk} isMobile={isMobile}/>
-                  <div style={{minWidth:0,overflow:"hidden"}}>
-                    <FormField label="Wedding Date" value={weddingDate} onChange={setWeddingDate} type="date" required tk={tk} isMobile={isMobile}/>
-                  </div>
+                  <FormField label="Wedding Date" value={weddingDate} onChange={setWeddingDate} type="date" required tk={tk} isMobile={isMobile}/>
                   <FormField label="Your Email" value={clientEmail} onChange={setClientEmail} placeholder="your@email.com" type="email" required tk={tk} isMobile={isMobile}/>
                 </div>
 
@@ -776,7 +774,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             </div>
             {/* YouTube player — full size on mobile so iOS can play, controls-only strip on desktop */}
             {isMobile ? (
-              <div style={{width:"100%",background:"#000"}}>
+              <div style={{width:"100%",background:"#1a1714",position:"relative"}}>
                 <iframe
                   key={playingYtId}
                   src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
@@ -785,6 +783,14 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                   allowFullScreen
                   title={`Preview: ${playingSong?.title}`}
                 />
+                {/* Solid overlay covers the video — only bottom controls strip remains tappable */}
+                <div style={{position:"absolute",top:0,left:0,right:0,bottom:46,background:"#1a1714",zIndex:2,pointerEvents:"none",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",letterSpacing:1,textTransform:"uppercase",fontSize:10}}>Reference Preview</div>
+                    <div style={{fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.8)",marginTop:4}}>{playingSong?.title}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2}}>{playingSong?.artist}</div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div style={{position:"relative",width:"100%",height:44,overflow:"hidden",background:"#000"}}>
@@ -818,14 +824,14 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 // ── Standalone form field (outside component to prevent focus loss) ────────
 function FormField({ label, value, onChange, placeholder, type="text", required, tk, isMobile }) {
   return (
-    <div style={{minWidth:0}}>
+    <div style={{minWidth:0,width:"100%"}}>
       <label style={{display:"block",fontSize:12,fontWeight:600,color:tk.textSub,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>{label}{required?" *":""}</label>
       <input
         type={type}
         value={value}
         onChange={e=>onChange(e.target.value)}
         placeholder={placeholder}
-        style={{width:"100%",maxWidth:"100%",padding:isMobile?"11px 13px":"9px 12px",border:`1px solid ${tk.borderStrong}`,borderRadius:10,fontSize:16,background:tk.surface,color:tk.text,fontFamily:"inherit",boxSizing:"border-box"}}
+        style={{display:"block",width:"100%",minWidth:0,maxWidth:"100%",padding:isMobile?"11px 13px":"9px 12px",border:`1px solid ${tk.borderStrong}`,borderRadius:10,fontSize:16,background:tk.surface,color:tk.text,fontFamily:"inherit",boxSizing:"border-box",WebkitAppearance:"none",appearance:"none"}}
       />
     </div>
   );
