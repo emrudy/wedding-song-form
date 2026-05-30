@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
-const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
-const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
 
 const SECTIONS = [
   {
@@ -20,6 +20,7 @@ const SECTIONS = [
     maxMinutes: 45,
     description: "Music played as guests are seated before the ceremony begins.",
     note: "Your pre-ceremony set list runs approximately 30 minutes. We include 45 minutes of music as a buffer in case of a late start.",
+    allowTrustMe: true,
   },
   {
     id: "bridalPartyProcessional",
@@ -55,6 +56,7 @@ const SECTIONS = [
     maxMinutes: 30,
     description: "Music played as guests exit after the ceremony.",
     note: null,
+    allowTrustMe: true,
   },
   {
     id: "cocktailhour",
@@ -64,6 +66,7 @@ const SECTIONS = [
     description: "Background music during the cocktail reception.",
     note: null,
     optional: true,
+    allowTrustMe: true,
   },
 ];
 
@@ -146,7 +149,20 @@ export default function ClientForm() {
     });
   };
 
-  const [expandedSections, setExpandedSections] = useState({ preceremony: true });
+  // "Trust me" option for multi-select sections
+  const [trustMe, setTrustMe] = useState({
+    preceremony: null,      // null = not chosen, "classical" | "modern"
+    postceremony: null,
+    cocktailhour: null,
+  });
+
+  const setTrustMeStyle = (sectionId, style) => {
+    setTrustMe(prev => {
+      const next = { ...prev, [sectionId]: prev[sectionId] === style ? null : style };
+      autoSave(clientId, { clientName, partnerName, weddingDate, clientEmail, selections, customRequests, trustMe: next });
+      return next;
+    });
+  };
   const toggleSection = (id) => setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
@@ -183,6 +199,7 @@ export default function ClientForm() {
           if (d.selections) setSelections(d.selections);
           if (d.customRequests) setCustomRequests(d.customRequests);
           if (d.includecocktail) setIncludecocktail(d.includecocktail);
+          if (d.trustMe) setTrustMe(d.trustMe);
           setStep(d.step || 1);
         }
       } catch(e) { console.error("Restore failed", e); }
@@ -255,16 +272,18 @@ export default function ClientForm() {
     for (const r of required) {
       if (!selections[r] && !customRequests[r]?.trim()) return false;
     }
-    if ((selections.preceremony||[]).length === 0) return false;
-    if ((selections.postceremony||[]).length === 0) return false;
+    if ((selections.preceremony||[]).length === 0 && !trustMe.preceremony) return false;
+    if ((selections.postceremony||[]).length === 0 && !trustMe.postceremony) return false;
     return true;
-  }, [selections, customRequests]);
+  }, [selections, customRequests, trustMe]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
       const getSongName = (id) => { const s = songs.find(x=>x.id===id); return s ? `${s.title} — ${s.artist}${s.duration?` (${s.duration})`:""}` : "—"; };
       const getMultiNames = (ids) => (ids||[]).map(id=>getSongName(id)).join("\n  • ");
+
+      const trustMeLabel = (id) => trustMe[id] ? `Emily's choice — ${trustMe[id] === "classical" ? "Classical music" : "Modern music"}` : null;
 
       const body = `
 NEW WEDDING SONG SELECTION
@@ -276,8 +295,8 @@ Email: ${clientEmail}
 
 SELECTIONS:
 -----------
-Pre-Ceremony (${formatMins(sectionTime("preceremony"))}):
-  • ${getMultiNames(selections.preceremony)}
+Pre-Ceremony (${trustMeLabel("preceremony") || formatMins(sectionTime("preceremony"))}):
+  • ${trustMeLabel("preceremony") || getMultiNames(selections.preceremony)}
 
 Bridal Party Processional:
   • ${selections.bridalPartyProcessional ? getSongName(selections.bridalPartyProcessional) : `Custom request: "${customRequests.bridalPartyProcessional}"`}
@@ -288,11 +307,11 @@ Bridal Processional:
 Bride & Groom Recessional:
   • ${selections.recessional ? getSongName(selections.recessional) : `Custom request: "${customRequests.recessional}"`}
 
-Post-Ceremony Guest Exit (${formatMins(sectionTime("postceremony"))}):
-  • ${getMultiNames(selections.postceremony)}
+Post-Ceremony Guest Exit (${trustMeLabel("postceremony") || formatMins(sectionTime("postceremony"))}):
+  • ${trustMeLabel("postceremony") || getMultiNames(selections.postceremony)}
 
-${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
-  • ${getMultiNames(selections.cocktailhour)}` : "Cocktail Hour: Not requested"}
+${includecocktail ? `Cocktail Hour (${trustMeLabel("cocktailhour") || formatMins(sectionTime("cocktailhour"))}):
+  • ${trustMeLabel("cocktailhour") || getMultiNames(selections.cocktailhour)}` : "Cocktail Hour: Not requested"}
       `.trim();
 
       await emailjs.send(
@@ -304,7 +323,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 
       await setDoc(doc(db, "clientForms", clientId), {
         clientName, partnerName, weddingDate, clientEmail,
-        selections, customRequests, submittedAt: new Date().toISOString(), status: "submitted"
+        selections, customRequests, trustMe, submittedAt: new Date().toISOString(), status: "submitted"
       });
 
       localStorage.removeItem("wedding_form_client_id");
@@ -616,6 +635,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                             <div style={{background:tk.green+"15",border:`1px solid ${tk.green+"40"}`,borderRadius:20,padding:"4px 14px",fontSize:12,fontWeight:600,color:tk.green}}>✓ Selected</div>
                           </div>
                         )}
+                        {section.allowTrustMe && trustMe[section.id] && (
+                          <div style={{display:"flex",justifyContent:"center",marginTop:10}}>
+                            <div style={{background:tk.accent+"15",border:`1px solid ${tk.accent+"40"}`,borderRadius:20,padding:"4px 14px",fontSize:12,fontWeight:600,color:tk.accentDark}}>✓ Leave it to Emily — {trustMe[section.id] === "classical" ? "Classical" : "Modern"}</div>
+                          </div>
+                        )}
                       </div>
 
                       {isExpanded && <>
@@ -627,18 +651,43 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                             You've exceeded the {section.maxMinutes}-minute limit by {formatMins(totalSecs - maxSecs)}. Please remove a song or two.
                           </div>
                         )}
-                        <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
-                          {songs.map(song => {
-                            const selected = section.multi
-                              ? (selections[section.id]||[]).includes(song.id)
-                              : selections[section.id] === song.id;
-                            return (
-                              <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi} isMobile={isMobile}
-                                onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
-                              />
-                            );
-                          })}
-                        </div>
+
+                        {/* Trust me option */}
+                        {section.allowTrustMe && (
+                          <div style={{margin:"14px 16px 0",background:tk.accent+"08",border:`1.5px solid ${trustMe[section.id]?tk.accent:tk.accent+"30"}`,borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{fontSize:13,fontWeight:600,color:tk.accentDark,marginBottom:4}}>Leave it to Emily</div>
+                            <div style={{fontSize:12,color:tk.textSub,marginBottom:12,lineHeight:1.5}}>Not sure what to pick? Let Emily curate the perfect selection for this part of your day. Just choose your preferred style:</div>
+                            <div style={{display:"flex",gap:10}}>
+                              {[{v:"classical",l:"Classical"},{v:"modern",l:"Modern"}].map(o=>(
+                                <button key={o.v}
+                                  onClick={()=>{ setTrustMeStyle(section.id, o.v); if(o.v) setSelections(prev=>({...prev,[section.id]:[]})); }}
+                                  style={{flex:1,padding:"10px",borderRadius:10,border:`2px solid ${trustMe[section.id]===o.v?tk.accent:tk.border}`,background:trustMe[section.id]===o.v?tk.accent+"18":"none",color:trustMe[section.id]===o.v?tk.accentDark:tk.textSub,fontSize:13,fontWeight:trustMe[section.id]===o.v?700:400,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>
+                                  {o.l}
+                                </button>
+                              ))}
+                            </div>
+                            {trustMe[section.id] && (
+                              <div style={{fontSize:12,color:tk.green,marginTop:8}}>✓ Emily will curate a {trustMe[section.id]} selection for you</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Song list — hidden when trust me is selected */}
+                        {!trustMe[section.id] && (
+                          <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                            {songs.map(song => {
+                              const selected = section.multi
+                                ? (selections[section.id]||[]).includes(song.id)
+                                : selections[section.id] === song.id;
+                              return (
+                                <SongRow key={song.id} song={song} selected={selected} isSingle={!section.multi} isMobile={isMobile}
+                                  onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+
                         {section.allowCustom && (
                           <div style={{margin:"0 16px 16px",background:tk.surface2,borderRadius:12,padding:"14px 16px",border:`1.5px solid ${customRequests[section.id]?.trim()?tk.accent:tk.border}`}}>
                             <div style={{fontSize:12,fontWeight:600,color:tk.textSub,textTransform:"uppercase",letterSpacing:0.4,marginBottom:6}}>Don't See The Song You Want?</div>
@@ -708,9 +757,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                       </div>
                       {customReq && !selections[section.id]
                         ? <div style={{fontSize:13,color:tk.accentDark,marginBottom:3,fontStyle:"italic"}}>Custom request: "{customReq}"</div>
-                        : ids.length === 0
-                          ? <div style={{fontSize:13,color:tk.textMuted,fontStyle:"italic"}}>No selection</div>
-                          : ids.map(id => <div key={id} style={{fontSize:13,color:tk.textSub,marginBottom:3}}>• {getSongName(id)}</div>)
+                        : trustMe[section.id]
+                          ? <div style={{fontSize:13,color:tk.accentDark,marginBottom:3}}>Leave it to Emily — <em>{trustMe[section.id] === "classical" ? "Classical" : "Modern"} music</em></div>
+                          : ids.length === 0
+                            ? <div style={{fontSize:13,color:tk.textMuted,fontStyle:"italic"}}>No selection</div>
+                            : ids.map(id => <div key={id} style={{fontSize:13,color:tk.textSub,marginBottom:3}}>• {getSongName(id)}</div>)
                       }
                     </div>
                   );
