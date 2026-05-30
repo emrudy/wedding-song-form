@@ -633,9 +633,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                     <div key={i} style={{width:3,borderRadius:2,background:"rgba(255,255,255,0.9)",animation:`audioBar${i} 0.8s ${i*0.15}s ease-in-out infinite alternate`,height:[8,14,6,11][i]}}/>
                   ))}
                 </div>
-                <div style={{minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{playingSong?.title}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{playingSong?.artist}</div>
+                <div style={{minWidth:0,textAlign:"left"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{playingSong?.title}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{playingSong?.artist}</div>
                 </div>
               </div>
               <button onClick={()=>setPlayingId(null)}
