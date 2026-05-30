@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
+const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
+const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
 
 const SECTIONS = [
   {
