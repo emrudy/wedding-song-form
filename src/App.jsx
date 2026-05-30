@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
+const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
+const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
 
 const SECTIONS = [
   {
@@ -489,7 +489,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                   return (
                     <div key={i} style={{display:"flex",alignItems:"center",flex:1,justifyContent:i===0?"flex-end":i===STEPS.length-1?"flex-start":"center"}}>
                       {i>0 && <div style={{flex:1,height:1,background:done?tk.accent:tk.surface3,transition:"background 0.3s"}}/>}
-                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"0 8px"}}>
+                      <div
+                        onClick={() => { if (i + 1 <= step) setStep(i + 1); }}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"0 8px",cursor:i+1<=step?"pointer":"default",opacity:i+1>step?0.5:1,transition:"opacity 0.2s"}}>
                         <div style={{width:24,height:24,borderRadius:"50%",background:done||active?tk.accent:tk.surface3,border:`2px solid ${done||active?tk.accent:tk.borderStrong}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:done||active?"#fff":tk.textMuted,transition:"all 0.2s"}}>
                           {done?"✓":i+1}
                         </div>
