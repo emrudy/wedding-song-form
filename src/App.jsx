@@ -631,21 +631,22 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 
             {/* Player — mobile shows full player with video hidden by overlay, desktop uses hidden iframe */}
             {isMobile ? (
-              <div style={{width:"100%",background:"#1a1714",position:"relative",height:180}}>
+              <div style={{width:"100%",background:"#1a1714",position:"relative",height:180,overflow:"hidden"}}>
+                {/* iframe sits behind overlay — provides audio */}
                 <iframe
                   key={playingYtId}
-                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&mute=0`}
-                  style={{width:"100%",height:180,border:"none",display:"block",position:"absolute",top:0,left:0}}
+                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&mute=0&controls=1`}
+                  style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
                   allow="autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
                   title={`Preview: ${playingSong?.title}`}
                 />
-                {/* Overlay covers video portion — leaves bottom 46px controls strip visible */}
-                <div style={{position:"absolute",top:0,left:0,right:0,height:134,background:"#1a1714",zIndex:2,pointerEvents:"none",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{textAlign:"center",padding:"0 16px"}}>
-                    <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Reference Preview</div>
-                    <div style={{fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.85)"}}>{playingSong?.title}</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2}}>{playingSong?.artist}</div>
+                {/* Full overlay covers entire box except bottom controls strip */}
+                <div style={{position:"absolute",top:0,left:0,right:0,bottom:40,background:"#1a1714",zIndex:10,pointerEvents:"none",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{textAlign:"center",padding:"0 20px"}}>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Reference Preview</div>
+                    <div style={{fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.9)",lineHeight:1.3}}>{playingSong?.title}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginTop:4}}>{playingSong?.artist}</div>
                   </div>
                 </div>
               </div>
