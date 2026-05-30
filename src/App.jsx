@@ -304,9 +304,29 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     try {
       for (const query of searches) {
         const q = encodeURIComponent(query);
-        const url = `https://itunes.apple.com/search?term=${q}&media=music&limit=10&entity=song`;
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        // Direct iTunes API call — supports CORS natively
+        const res = await fetch(
+          `https://itunes.apple.com/search?term=${q}&media=music&limit=10&entity=song`,
+          { headers: { Accept: "application/json" } }
+        );
         if (!res.ok) continue;
+        const data = await res.json();
+        const match = data.results?.find(r => r.previewUrl);
+        if (match?.previewUrl) {
+          previewCache.current[song.id] = match.previewUrl;
+          setItunesUrl(match.previewUrl);
+          setItunesLoading(false);
+          return;
+        }
+      }
+      previewCache.current[song.id] = "";
+      setItunesLoading(false);
+    } catch(e) {
+      console.error("iTunes fetch failed", e);
+      // Fallback to proxy if direct call fails
+      try {
+        const q = encodeURIComponent(`${song.title} ${song.artist}`);
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://itunes.apple.com/search?term=${q}&media=music&limit=10`)}`);
         const raw = await res.json();
         const data = JSON.parse(raw.contents);
         const match = data.results?.find(r => r.previewUrl);
@@ -316,16 +336,29 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           setItunesLoading(false);
           return;
         }
-      }
-      previewCache.current[song.id] = ""; // cache miss
-      setItunesLoading(false);
-    } catch(e) {
-      console.error("iTunes fetch failed", e);
+      } catch(e2) { console.error("Fallback also failed", e2); }
       setItunesLoading(false);
     }
   };
 
-  // Stop audio when playingId cleared
+  // Preload iTunes previews in background on mobile when song list is visible
+  useEffect(() => {
+    if (!isMobile || songs.length === 0 || step !== 2) return;
+    // Stagger preloads so we don't hammer the API
+    songs.forEach((song, i) => {
+      setTimeout(() => {
+        if (previewCache.current[song.id] !== undefined) return;
+        const q = encodeURIComponent(`${song.title} ${song.artist}`);
+        fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=5&entity=song`)
+          .then(r => r.json())
+          .then(data => {
+            const match = data.results?.find(r => r.previewUrl);
+            previewCache.current[song.id] = match?.previewUrl || "";
+          })
+          .catch(() => { previewCache.current[song.id] = ""; });
+      }, i * 150); // 150ms between each request
+    });
+  }, [isMobile, songs, step]);
   useEffect(() => {
     if (!playingId) {
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
