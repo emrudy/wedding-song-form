@@ -157,6 +157,42 @@ export default function ClientForm() {
   }, []);
   const isMobile = windowWidth < 768;
 
+  const [restoring, setRestoring] = useState(false);
+
+  // Check localStorage for existing session on load
+  useEffect(() => {
+    const savedId = localStorage.getItem("wedding_form_client_id");
+    if (!savedId) return;
+    setRestoring(true);
+    const restore = async () => {
+      try {
+        const snap = await getDoc(doc(db, "clientForms", savedId));
+        if (snap.exists()) {
+          const d = snap.data();
+          // Don't restore already submitted forms
+          if (d.status === "submitted") {
+            localStorage.removeItem("wedding_form_client_id");
+            setRestoring(false);
+            return;
+          }
+          setClientId(savedId);
+          if (d.clientName) setClientName(d.clientName);
+          if (d.partnerName) setPartnerName(d.partnerName);
+          if (d.weddingDate) setWeddingDate(d.weddingDate);
+          if (d.clientEmail) setClientEmail(d.clientEmail);
+          if (d.selections) setSelections(d.selections);
+          if (d.customRequests) setCustomRequests(d.customRequests);
+          if (d.includecocktail) setIncludecocktail(d.includecocktail);
+          setStep(d.step || 1);
+        }
+      } catch(e) { console.error("Restore failed", e); }
+      setRestoring(false);
+    };
+    restore();
+  }, []);
+
+
+
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "songs"), (snap) => {
       setSongs(snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a,b)=>a.title.localeCompare(b.title)));
@@ -168,13 +204,14 @@ export default function ClientForm() {
   const autoSave = async (id, data) => {
     if (!id) return;
     try {
-      await setDoc(doc(db, "clientForms", id), { ...data, updatedAt: new Date().toISOString() }, { merge: true });
+      await setDoc(doc(db, "clientForms", id), { ...data, step, updatedAt: new Date().toISOString() }, { merge: true });
     } catch(e) { console.error("Autosave failed", e); }
   };
 
   const startForm = () => {
     const id = `client_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     setClientId(id);
+    localStorage.setItem("wedding_form_client_id", id);
     setStep(1);
   };
 
@@ -270,6 +307,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
         selections, customRequests, submittedAt: new Date().toISOString(), status: "submitted"
       });
 
+      localStorage.removeItem("wedding_form_client_id");
       setStep(4);
     } catch(e) {
       console.error("Submit failed", e);
@@ -468,8 +506,15 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 
         <main style={{maxWidth:760,margin:"0 auto",padding:isMobile?"24px 16px 60px":"40px 24px 80px"}}>
 
+          {/* ── RESTORING ── */}
+          {restoring && (
+            <div style={{textAlign:"center",padding:"60px 0"}} className="fade-up">
+              <div style={{fontSize:14,color:tk.textSub}}>Restoring your selections…</div>
+            </div>
+          )}
+
           {/* ── STEP 0: Welcome ── */}
-          {step === 0 && (
+          {!restoring && step === 0 && (
             <div style={{textAlign:"center",maxWidth:560,margin:"0 auto"}} className="fade-up">
               <div style={{width:64,height:2,background:`linear-gradient(90deg,${tk.accent},${tk.accent2})`,margin:"0 auto 32px",borderRadius:1}}/>
               <h1 style={{fontFamily:"'SF Pro Display',-apple-system,'DM Sans',sans-serif",fontSize:isMobile?28:38,fontWeight:700,color:tk.text,letterSpacing:-0.5,marginBottom:16,lineHeight:1.15}}>Song Selections</h1>
@@ -489,7 +534,10 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           {step === 1 && (
             <div className="fade-up">
               <h2 style={{fontFamily:"'SF Pro Display',-apple-system,'DM Sans',sans-serif",fontSize:isMobile?26:34,fontWeight:500,color:tk.text,marginBottom:6}}>Tell Me About Your Day</h2>
-              <p style={{fontSize:14,color:tk.textSub,marginBottom:28,lineHeight:1.6}}>This helps me personalize your experience and keep your selections organized.</p>
+              <p style={{fontSize:14,color:tk.textSub,marginBottom:28,lineHeight:1.6}}>This helps me personalize your experience and keep your selections organized.{" "}
+                <span onClick={()=>{ localStorage.removeItem("wedding_form_client_id"); setClientId(null); setClientName(""); setPartnerName(""); setWeddingDate(""); setClientEmail(""); setIncludecocktail(false); setSelections({preceremony:[],bridalPartyProcessional:null,bridalProcessional:null,recessional:null,postceremony:[],cocktailhour:[]}); setCustomRequests({bridalPartyProcessional:"",bridalProcessional:"",recessional:""}); setStep(0); }}
+                  style={{color:tk.textMuted,cursor:"pointer",textDecoration:"underline",fontSize:12}}>Start over</span>
+              </p>
               <div style={{background:tk.surface,borderRadius:18,padding:isMobile?"20px":"28px",border:`1px solid ${tk.border}`,boxShadow:tk.shadow,marginBottom:24}}>
                 <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,width:"100%"}}>
                   <FormField label="Your Name" value={clientName} onChange={setClientName} placeholder="e.g. Sarah Johnson" required tk={tk} isMobile={isMobile}/>
