@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
+const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
+const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
 
 const SECTIONS = [
   {
@@ -278,40 +278,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     setSubmitting(false);
   };
 
-  const playerRef = useRef(null);
-  const ytPlayerRef = useRef(null);
-  const ytApiReady = useRef(false);
-
-  // Load YouTube IFrame API once
-  useEffect(() => {
-    if (window.YT) { ytApiReady.current = true; return; }
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-    window.onYouTubeIframeAPIReady = () => { ytApiReady.current = true; };
-  }, []);
-
-  // When playingId changes, load and play the new video
-  useEffect(() => {
-    if (!playingId || !playingYtId) {
-      if (ytPlayerRef.current) { try { ytPlayerRef.current.stopVideo(); } catch(e){} }
-      return;
-    }
-    const initPlayer = () => {
-      if (ytPlayerRef.current) {
-        try { ytPlayerRef.current.loadVideoById(playingYtId); } catch(e){}
-      } else if (playerRef.current) {
-        ytPlayerRef.current = new window.YT.Player(playerRef.current, {
-          height:"1", width:"1",
-          videoId: playingYtId,
-          playerVars: { autoplay:1, playsinline:1, controls:0, rel:0, modestbranding:1 },
-          events: { onReady: (e) => { try { e.target.playVideo(); } catch(err){} } }
-        });
-      }
-    };
-    if (ytApiReady.current && window.YT?.Player) initPlayer();
-    else { const t = setInterval(() => { if (ytApiReady.current && window.YT?.Player) { clearInterval(t); initPlayer(); } }, 100); return () => clearInterval(t); }
-  }, [playingId, playingYtId]);
+  // ── Render helpers ─────────────────────────────────────────────────────
   const visibleSections = SECTIONS.filter(s => !s.optional || includecocktail);
   const playingSong = songs.find(s => s.id === playingId);
   const playingYtId = playingSong ? getYouTubeId(playingSong.youtubeUrl) : null;
@@ -644,10 +611,16 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           </div>
         </footer>
 
-        {/* ── Persistent YouTube player div (invisible, audio only) ── */}
-        <div style={{position:"fixed",left:"-9999px",top:"-9999px",width:1,height:1,overflow:"hidden"}} aria-hidden="true">
-          <div ref={playerRef}/>
-        </div>
+        {/* ── Hidden audio iframe ── */}
+        {playingId && playingYtId && (
+          <iframe
+            key={playingYtId}
+            src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+            style={{position:"fixed",left:"-9999px",top:"-9999px",width:1,height:1,border:"none",pointerEvents:"none",opacity:0}}
+            allow="autoplay; encrypted-media"
+            title="audio"
+          />
+        )}
 
         {/* ── Now playing indicator ── */}
         {playingId && playingYtId && (
