@@ -8,9 +8,9 @@ const VIOLINIST_NAME  = "Emily Hart";
 const VIOLINIST_EMAIL = "emily@musicfromthehart.com";
 
 // EmailJS config — fill these in after setting up EmailJS
-const EMAILJS_SERVICE_ID  = "service_iyjtwf8";
-const EMAILJS_TEMPLATE_ID = "template_p01cpjx";
-const EMAILJS_PUBLIC_KEY  = "rxzSdB_nUXpfj2jgX";
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
 
 const SECTIONS = [
   {
@@ -329,7 +329,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
   const playingSong = songs.find(s => s.id === playingId);
   const playingYtId = playingSong ? getYouTubeId(playingSong.youtubeUrl) : null;
 
-  const SongRow = ({ song, selected, onClick, isSingle }) => {
+  const SongRow = ({ song, selected, onClick, isSingle, isMobile }) => {
     const ytId = getYouTubeId(song.youtubeUrl);
     const isPlaying = playingId === song.id;
 
@@ -597,6 +597,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                                 song={song}
                                 selected={selected}
                                 isSingle={!section.multi}
+                                isMobile={isMobile}
                                 onClick={() => section.multi ? toggleMulti(section.id, song.id) : setSingle(section.id, song.id)}
                               />
                             );
@@ -749,7 +750,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
         {/* ── Footer ── */}
         <footer style={{borderTop:`1px solid ${tk.border}`,padding:"20px 24px",textAlign:"center"}}>
           <div style={{fontSize:12,color:tk.textMuted}}>
-            {VIOLINIST_NAME} • Music From The Hart •{" "}
+            {VIOLINIST_NAME} • Wedding Violin •{" "}
             <a href={`mailto:${VIOLINIST_EMAIL}`} style={{color:tk.accent,textDecoration:"none"}}>{VIOLINIST_EMAIL}</a>
           </div>
         </footer>
@@ -771,24 +772,29 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                 ✕
               </button>
             </div>
-            {/* YouTube iframe plays audio — completely covered by opaque overlay */}
-            <div style={{position:"relative",width:"100%",height:0,overflow:"hidden"}}>
+            {/* YouTube player — no autoplay so iOS allows it, user taps play on the player */}
+            <div style={{position:"relative",width:"100%",height:isMobile?52:44,overflow:"hidden",background:"#000"}}>
               <iframe
                 key={playingYtId}
-                src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1`}
-                style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
-                allow="autoplay; encrypted-media"
+                src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
+                style={{position:"absolute",bottom:0,left:0,width:"100%",height:220,border:"none"}}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
                 title={`Preview: ${playingSong?.title}`}
               />
+              {/* Overlay covers video, leaves only controls strip visible */}
+              <div style={{position:"absolute",top:0,left:0,right:0,bottom:isMobile?52:44,background:"#000",zIndex:2,pointerEvents:"none"}}/>
             </div>
-            {/* Audio playing indicator */}
-            <div style={{padding:"12px 14px",background:tk.surface2,display:"flex",alignItems:"center",gap:10}}>
+            {/* Audio indicator */}
+            <div style={{padding:"8px 14px",background:tk.surface2,display:"flex",alignItems:"center",gap:10}}>
               <div style={{display:"flex",gap:3,alignItems:"flex-end",height:16}}>
                 {[0,1,2,3].map(i=>(
                   <div key={i} style={{width:3,borderRadius:2,background:tk.accent,animation:`audioBar${i} 0.8s ${i*0.15}s ease-in-out infinite alternate`,height:[10,16,8,13][i]}}/>
                 ))}
               </div>
-              <span style={{fontSize:12,color:tk.textSub,fontStyle:"italic"}}>Now playing — reference recording only</span>
+              <span style={{fontSize:11,color:tk.textSub,fontStyle:"italic"}}>
+                {isMobile ? "Tap ▶ on the player above to listen · Reference recording only" : "Now playing — reference recording only"}
+              </span>
             </div>
           </div>
         )}
@@ -801,14 +807,14 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 // ── Standalone form field (outside component to prevent focus loss) ────────
 function FormField({ label, value, onChange, placeholder, type="text", required, tk, isMobile }) {
   return (
-    <div>
+    <div style={{minWidth:0}}>
       <label style={{display:"block",fontSize:12,fontWeight:600,color:tk.textSub,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>{label}{required?" *":""}</label>
       <input
         type={type}
         value={value}
         onChange={e=>onChange(e.target.value)}
         placeholder={placeholder}
-        style={{width:"100%",padding:isMobile?"11px 13px":"9px 12px",border:`1px solid ${tk.borderStrong}`,borderRadius:10,fontSize:16,background:tk.surface,color:tk.text,fontFamily:"inherit"}}
+        style={{width:"100%",maxWidth:"100%",padding:isMobile?"11px 13px":"9px 12px",border:`1px solid ${tk.borderStrong}`,borderRadius:10,fontSize:16,background:tk.surface,color:tk.text,fontFamily:"inherit",boxSizing:"border-box"}}
       />
     </div>
   );
