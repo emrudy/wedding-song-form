@@ -282,23 +282,43 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
   const audioRef = useRef(null);
   const [itunesUrl, setItunesUrl] = useState(null);
   const [itunesLoading, setItunesLoading] = useState(false);
+  const previewCache = useRef({});
 
   const fetchItunesPreview = async (song) => {
+    // Return cached result instantly
+    if (previewCache.current[song.id] !== undefined) {
+      setItunesUrl(previewCache.current[song.id] || null);
+      setItunesLoading(false);
+      return;
+    }
+
     setItunesLoading(true);
     setItunesUrl(null);
+
+    const searches = [
+      `${song.title} ${song.artist}`,
+      song.title,
+      song.title.split(/[-–(,]/)[0].trim(),
+    ];
+
     try {
-      const q = encodeURIComponent(`${song.title} ${song.artist}`);
-      // Use allorigins proxy to bypass CORS restriction on iTunes API
-      const proxyUrl = `https://itunes.apple.com/search?term=${q}&media=music&limit=5&callback=?`;
-      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://itunes.apple.com/search?term=${q}&media=music&limit=5`)}`);
-      const raw = await res.json();
-      const data = JSON.parse(raw.contents);
-      const match = data.results?.find(r => r.previewUrl);
-      if (match?.previewUrl) {
-        setItunesUrl(match.previewUrl);
-      } else {
-        setItunesLoading(false);
+      for (const query of searches) {
+        const q = encodeURIComponent(query);
+        const url = `https://itunes.apple.com/search?term=${q}&media=music&limit=10&entity=song`;
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!res.ok) continue;
+        const raw = await res.json();
+        const data = JSON.parse(raw.contents);
+        const match = data.results?.find(r => r.previewUrl);
+        if (match?.previewUrl) {
+          previewCache.current[song.id] = match.previewUrl;
+          setItunesUrl(match.previewUrl);
+          setItunesLoading(false);
+          return;
+        }
       }
+      previewCache.current[song.id] = ""; // cache miss
+      setItunesLoading(false);
     } catch(e) {
       console.error("iTunes fetch failed", e);
       setItunesLoading(false);
@@ -696,7 +716,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             </div>
             <div style={{padding:"8px 14px",background:tk.surface2}}>
               <div style={{fontSize:11,color:tk.textMuted,fontStyle:"italic",textAlign:"center"}}>
-                {isMobile && itunesLoading ? "Loading preview…" : "Reference recording only — live violin performance at your wedding"}
+                {isMobile && itunesLoading
+                  ? "Searching for preview…"
+                  : isMobile && !itunesUrl && !itunesLoading
+                    ? "No preview available for this song"
+                    : "Reference recording only — live violin performance at your wedding"}
               </div>
             </div>
           </div>
