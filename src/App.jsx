@@ -285,7 +285,6 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
   const previewCache = useRef({});
 
   const fetchItunesPreview = async (song) => {
-    // Return cached result instantly
     if (previewCache.current[song.id] !== undefined) {
       setItunesUrl(previewCache.current[song.id] || null);
       setItunesLoading(false);
@@ -303,12 +302,8 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
 
     try {
       for (const query of searches) {
-        const q = encodeURIComponent(query);
-        // Direct iTunes API call — supports CORS natively
-        const res = await fetch(
-          `https://itunes.apple.com/search?term=${q}&media=music&limit=10&entity=song`,
-          { headers: { Accept: "application/json" } }
-        );
+        // Call our own Vercel serverless proxy — fast, no CORS issues
+        const res = await fetch(`/api/itunes?q=${encodeURIComponent(query)}`);
         if (!res.ok) continue;
         const data = await res.json();
         const match = data.results?.find(r => r.previewUrl);
@@ -322,21 +317,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
       previewCache.current[song.id] = "";
       setItunesLoading(false);
     } catch(e) {
-      console.error("iTunes fetch failed", e);
-      // Fallback to proxy if direct call fails
-      try {
-        const q = encodeURIComponent(`${song.title} ${song.artist}`);
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://itunes.apple.com/search?term=${q}&media=music&limit=10`)}`);
-        const raw = await res.json();
-        const data = JSON.parse(raw.contents);
-        const match = data.results?.find(r => r.previewUrl);
-        if (match?.previewUrl) {
-          previewCache.current[song.id] = match.previewUrl;
-          setItunesUrl(match.previewUrl);
-          setItunesLoading(false);
-          return;
-        }
-      } catch(e2) { console.error("Fallback also failed", e2); }
+      console.error("Preview fetch failed", e);
       setItunesLoading(false);
     }
   };
@@ -344,19 +325,17 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
   // Preload iTunes previews in background on mobile when song list is visible
   useEffect(() => {
     if (!isMobile || songs.length === 0 || step !== 2) return;
-    // Stagger preloads so we don't hammer the API
     songs.forEach((song, i) => {
       setTimeout(() => {
         if (previewCache.current[song.id] !== undefined) return;
-        const q = encodeURIComponent(`${song.title} ${song.artist}`);
-        fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=5&entity=song`)
+        fetch(`/api/itunes?q=${encodeURIComponent(`${song.title} ${song.artist}`)}`)
           .then(r => r.json())
           .then(data => {
             const match = data.results?.find(r => r.previewUrl);
             previewCache.current[song.id] = match?.previewUrl || "";
           })
           .catch(() => { previewCache.current[song.id] = ""; });
-      }, i * 150); // 150ms between each request
+      }, i * 200);
     });
   }, [isMobile, songs, step]);
   useEffect(() => {
