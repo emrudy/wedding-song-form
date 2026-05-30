@@ -288,12 +288,21 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     setItunesUrl(null);
     try {
       const q = encodeURIComponent(`${song.title} ${song.artist}`);
-      const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=5`);
-      const data = await res.json();
+      // Use allorigins proxy to bypass CORS restriction on iTunes API
+      const proxyUrl = `https://itunes.apple.com/search?term=${q}&media=music&limit=5&callback=?`;
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://itunes.apple.com/search?term=${q}&media=music&limit=5`)}`);
+      const raw = await res.json();
+      const data = JSON.parse(raw.contents);
       const match = data.results?.find(r => r.previewUrl);
-      if (match?.previewUrl) setItunesUrl(match.previewUrl);
-    } catch(e) { console.error("iTunes fetch failed", e); }
-    setItunesLoading(false);
+      if (match?.previewUrl) {
+        setItunesUrl(match.previewUrl);
+      } else {
+        setItunesLoading(false);
+      }
+    } catch(e) {
+      console.error("iTunes fetch failed", e);
+      setItunesLoading(false);
+    }
   };
 
   // Stop audio when playingId cleared
@@ -339,15 +348,18 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             {song.duration && <span style={{flexShrink:0,color:tk.textMuted}}>· {song.duration}</span>}
           </div>
         </div>
-        {ytId && (
+        {/* Play button — all songs on mobile, YouTube-only on desktop */}
+        {(isMobile || ytId) && (
           <button onClick={handlePlay}
             style={{flexShrink:0,width:34,height:34,borderRadius:"50%",background:isPlaying?tk.accent:tk.surface2,border:`1.5px solid ${isPlaying?tk.accent:tk.borderStrong}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",WebkitTapHighlightColor:"transparent",fontFamily:"inherit"}}
             title={isPlaying?"Stop preview":"Play preview"}>
-            {isPlaying
-              ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
-                  <span style={{background:"#fff",borderRadius:1}}/><span style={{background:"#fff",borderRadius:1}}/>
-                </span>
-              : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
+            {isPlaying && itunesLoading
+              ? <span style={{width:8,height:8,borderRadius:"50%",border:"2px solid #fff",borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
+              : isPlaying
+                ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
+                    <span style={{background:isPlaying?"#fff":tk.accentDark,borderRadius:1}}/><span style={{background:isPlaying?"#fff":tk.accentDark,borderRadius:1}}/>
+                  </span>
+                : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
             }
           </button>
         )}
@@ -370,6 +382,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
         @keyframes audioBar1{from{height:6px}to{height:16px}}
         @keyframes audioBar2{from{height:3px}to{height:8px}}
         @keyframes audioBar3{from{height:5px}to{height:13px}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         .fade-up{animation:fadeUp 0.4s ease both;}
         select{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
       `}</style>
