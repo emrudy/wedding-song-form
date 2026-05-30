@@ -611,16 +611,31 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           </div>
         </footer>
 
-        {/* ── Floating mini-player ── */}
+        {/* ── YouTube IFrame API script ── */}
         {playingId && playingYtId && (
-          <div style={{position:"fixed",bottom:isMobile?16:24,right:isMobile?16:24,zIndex:999,background:tk.surface,borderRadius:16,boxShadow:"0 8px 40px rgba(0,0,0,0.18)",border:`1px solid ${tk.border}`,overflow:"hidden",width:isMobile?300:340}}>
-            {/* Header */}
+          <iframe
+            key={playingYtId}
+            id="yt-audio-player"
+            src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
+            style={{position:"fixed",bottom:-1000,left:-1000,width:1,height:1,border:"none",pointerEvents:"none",opacity:0}}
+            allow="autoplay; encrypted-media"
+            title="audio"
+          />
+        )}
+
+        {/* ── Now playing indicator (no video, just a slim bar) ── */}
+        {playingId && playingYtId && (
+          <div style={{position:"fixed",bottom:isMobile?16:24,right:isMobile?16:24,zIndex:999,background:tk.surface,borderRadius:14,boxShadow:"0 8px 40px rgba(0,0,0,0.18)",border:`1px solid ${tk.border}`,overflow:"hidden",width:isMobile?280:320}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:tk.accent,gap:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-                <div style={{width:6,height:6,borderRadius:"50%",background:"rgba(255,255,255,0.7)",flexShrink:0}}/>
+                <div style={{display:"flex",gap:2,alignItems:"flex-end",height:14,flexShrink:0}}>
+                  {[0,1,2,3].map(i=>(
+                    <div key={i} style={{width:3,borderRadius:2,background:"rgba(255,255,255,0.9)",animation:`audioBar${i} 0.8s ${i*0.15}s ease-in-out infinite alternate`,height:[8,14,6,11][i]}}/>
+                  ))}
+                </div>
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{playingSong?.title}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,0.75)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{playingSong?.artist} · Reference preview</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{playingSong?.artist}</div>
                 </div>
               </div>
               <button onClick={()=>setPlayingId(null)}
@@ -628,49 +643,8 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                 ✕
               </button>
             </div>
-
-            {/* Player — mobile shows full player with video hidden by overlay, desktop uses hidden iframe */}
-            {isMobile ? (
-              <div style={{width:"100%",background:"#1a1714",position:"relative",height:180,overflow:"hidden"}}>
-                {/* iframe sits behind overlay — provides audio */}
-                <iframe
-                  key={playingYtId}
-                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&mute=0&controls=1`}
-                  style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  title={`Preview: ${playingSong?.title}`}
-                />
-                {/* Full overlay covers entire box except bottom controls strip */}
-                <div style={{position:"absolute",top:0,left:0,right:0,bottom:40,background:"#1a1714",zIndex:10,pointerEvents:"none",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{textAlign:"center",padding:"0 20px"}}>
-                    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Reference Preview</div>
-                    <div style={{fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.9)",lineHeight:1.3}}>{playingSong?.title}</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginTop:4}}>{playingSong?.artist}</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Desktop — hidden zero-height iframe, audio plays invisibly */
-              <div style={{position:"relative",width:"100%",height:0,overflow:"hidden"}}>
-                <iframe
-                  key={playingYtId}
-                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1`}
-                  style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
-                  allow="autoplay; encrypted-media"
-                  title={`Preview: ${playingSong?.title}`}
-                />
-              </div>
-            )}
-
-            {/* Audio indicator */}
-            <div style={{padding:"12px 14px",background:tk.surface2,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{display:"flex",gap:3,alignItems:"flex-end",height:16}}>
-                {[0,1,2,3].map(i=>(
-                  <div key={i} style={{width:3,borderRadius:2,background:tk.accent,animation:`audioBar${i} 0.8s ${i*0.15}s ease-in-out infinite alternate`,height:[10,16,8,13][i]}}/>
-                ))}
-              </div>
-              <span style={{fontSize:11,color:tk.textSub,fontStyle:"italic"}}>Reference recording only</span>
+            <div style={{padding:"8px 14px",background:tk.surface2}}>
+              <div style={{fontSize:11,color:tk.textMuted,fontStyle:"italic",textAlign:"center"}}>Reference recording only — live violin performance at your wedding</div>
             </div>
           </div>
         )}
