@@ -388,19 +388,23 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             {song.duration && <span style={{flexShrink:0,color:tk.textMuted}}>· {song.duration}</span>}
           </div>
         </div>
-        {/* Play button — all songs on all devices */}
-        <button onClick={handlePlay}
-          style={{flexShrink:0,width:34,height:34,borderRadius:"50%",background:isPlaying?tk.accent:tk.surface2,border:`1.5px solid ${isPlaying?tk.accent:tk.borderStrong}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",WebkitTapHighlightColor:"transparent",fontFamily:"inherit"}}
-          title={isPlaying?"Stop preview":"Play preview"}>
-          {isPlaying && itunesLoading
-            ? <span style={{width:8,height:8,borderRadius:"50%",border:"2px solid #fff",borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
-            : isPlaying
-              ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
-                  <span style={{background:"#fff",borderRadius:1}}/><span style={{background:"#fff",borderRadius:1}}/>
-                </span>
-              : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
-          }
-        </button>
+        {/* Play button — only show if preview is available or still loading */}
+        {previewCache.current[song.id] !== "" && (
+          <button onClick={handlePlay}
+            style={{flexShrink:0,width:34,height:34,borderRadius:"50%",background:isPlaying?tk.accent:tk.surface2,border:`1.5px solid ${isPlaying?tk.accent:tk.borderStrong}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",WebkitTapHighlightColor:"transparent",fontFamily:"inherit"}}
+            title={isPlaying?"Stop preview":"Play preview"}>
+            {isPlaying && itunesLoading
+              ? <span style={{width:8,height:8,borderRadius:"50%",border:"2px solid #fff",borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
+              : isPlaying
+                ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
+                    <span style={{background:"#fff",borderRadius:1}}/><span style={{background:"#fff",borderRadius:1}}/>
+                  </span>
+                : previewCache.current[song.id] === undefined
+                  ? <span style={{width:6,height:6,borderRadius:"50%",border:`1.5px solid ${tk.textMuted}`,borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
+                  : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
+            }
+          </button>
+        )}
       </div>
     );
   };
