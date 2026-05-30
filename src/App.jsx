@@ -479,11 +479,13 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
               <h2 style={{fontFamily:"'SF Pro Display',-apple-system,'DM Sans',sans-serif",fontSize:isMobile?26:34,fontWeight:500,color:tk.text,marginBottom:6}}>Tell Me About Your Day</h2>
               <p style={{fontSize:14,color:tk.textSub,marginBottom:28,lineHeight:1.6}}>This helps me personalize your experience and keep your selections organized.</p>
 
-              <div style={{background:tk.surface,borderRadius:18,padding:isMobile?"20px":"28px",border:`1px solid ${tk.border}`,boxShadow:tk.shadow,marginBottom:24}}>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16}}>
+              <div style={{background:tk.surface,borderRadius:18,padding:isMobile?"20px":"28px",border:`1px solid ${tk.border}`,boxShadow:tk.shadow,marginBottom:24,overflow:"hidden"}}>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,width:"100%",overflow:"hidden"}}>
                   <FormField label="Your Name" value={clientName} onChange={setClientName} placeholder="e.g. Sarah Johnson" required tk={tk} isMobile={isMobile}/>
                   <FormField label="Partner's Name" value={partnerName} onChange={setPartnerName} placeholder="e.g. James Williams" tk={tk} isMobile={isMobile}/>
-                  <FormField label="Wedding Date" value={weddingDate} onChange={setWeddingDate} type="date" required tk={tk} isMobile={isMobile}/>
+                  <div style={{minWidth:0,overflow:"hidden"}}>
+                    <FormField label="Wedding Date" value={weddingDate} onChange={setWeddingDate} type="date" required tk={tk} isMobile={isMobile}/>
+                  </div>
                   <FormField label="Your Email" value={clientEmail} onChange={setClientEmail} placeholder="your@email.com" type="email" required tk={tk} isMobile={isMobile}/>
                 </div>
 
@@ -772,19 +774,30 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                 ✕
               </button>
             </div>
-            {/* YouTube player — no autoplay so iOS allows it, user taps play on the player */}
-            <div style={{position:"relative",width:"100%",height:isMobile?52:44,overflow:"hidden",background:"#000"}}>
-              <iframe
-                key={playingYtId}
-                src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
-                style={{position:"absolute",bottom:0,left:0,width:"100%",height:220,border:"none"}}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                title={`Preview: ${playingSong?.title}`}
-              />
-              {/* Overlay covers video, leaves only controls strip visible */}
-              <div style={{position:"absolute",top:0,left:0,right:0,bottom:isMobile?52:44,background:"#000",zIndex:2,pointerEvents:"none"}}/>
-            </div>
+            {/* YouTube player — full size on mobile so iOS can play, controls-only strip on desktop */}
+            {isMobile ? (
+              <div style={{width:"100%",background:"#000"}}>
+                <iframe
+                  key={playingYtId}
+                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
+                  style={{width:"100%",height:180,border:"none",display:"block"}}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  title={`Preview: ${playingSong?.title}`}
+                />
+              </div>
+            ) : (
+              <div style={{position:"relative",width:"100%",height:44,overflow:"hidden",background:"#000"}}>
+                <iframe
+                  key={playingYtId}
+                  src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                  style={{position:"absolute",bottom:0,left:0,width:"100%",height:220,border:"none"}}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  title={`Preview: ${playingSong?.title}`}
+                />
+                <div style={{position:"absolute",top:0,left:0,right:0,bottom:44,background:"#000",zIndex:2,pointerEvents:"none"}}/>
+              </div>
+            )}
             {/* Audio indicator */}
             <div style={{padding:"8px 14px",background:tk.surface2,display:"flex",alignItems:"center",gap:10}}>
               <div style={{display:"flex",gap:3,alignItems:"flex-end",height:16}}>
@@ -792,9 +805,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
                   <div key={i} style={{width:3,borderRadius:2,background:tk.accent,animation:`audioBar${i} 0.8s ${i*0.15}s ease-in-out infinite alternate`,height:[10,16,8,13][i]}}/>
                 ))}
               </div>
-              <span style={{fontSize:11,color:tk.textSub,fontStyle:"italic"}}>
-                {isMobile ? "Tap ▶ on the player above to listen · Reference recording only" : "Now playing — reference recording only"}
-              </span>
+              <span style={{fontSize:11,color:tk.textSub,fontStyle:"italic"}}>Reference recording only — your wedding music will be a live violin performance.</span>
             </div>
           </div>
         )}
