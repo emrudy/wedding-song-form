@@ -331,9 +331,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
     }
   };
 
-  // Preload iTunes previews in background on mobile when song list is visible
+  // Preload iTunes previews in background when song list is visible
   useEffect(() => {
-    if (!isMobile || songs.length === 0 || step !== 2) return;
+    if (songs.length === 0 || step !== 2) return;
     songs.forEach((song, i) => {
       setTimeout(() => {
         if (previewCache.current[song.id] !== undefined) return;
@@ -373,7 +373,7 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
       e.stopPropagation();
       if (isPlaying) { setPlayingId(null); return; }
       setPlayingId(song.id);
-      if (isMobile) fetchItunesPreview(song);
+      fetchItunesPreview(song);
     };
     return (
       <div onClick={onClick}
@@ -388,21 +388,19 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             {song.duration && <span style={{flexShrink:0,color:tk.textMuted}}>· {song.duration}</span>}
           </div>
         </div>
-        {/* Play button — all songs on mobile, YouTube-only on desktop */}
-        {(isMobile || ytId) && (
-          <button onClick={handlePlay}
-            style={{flexShrink:0,width:34,height:34,borderRadius:"50%",background:isPlaying?tk.accent:tk.surface2,border:`1.5px solid ${isPlaying?tk.accent:tk.borderStrong}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",WebkitTapHighlightColor:"transparent",fontFamily:"inherit"}}
-            title={isPlaying?"Stop preview":"Play preview"}>
-            {isPlaying && itunesLoading
-              ? <span style={{width:8,height:8,borderRadius:"50%",border:"2px solid #fff",borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
-              : isPlaying
-                ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
-                    <span style={{background:isPlaying?"#fff":tk.accentDark,borderRadius:1}}/><span style={{background:isPlaying?"#fff":tk.accentDark,borderRadius:1}}/>
-                  </span>
-                : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
-            }
-          </button>
-        )}
+        {/* Play button — all songs on all devices */}
+        <button onClick={handlePlay}
+          style={{flexShrink:0,width:34,height:34,borderRadius:"50%",background:isPlaying?tk.accent:tk.surface2,border:`1.5px solid ${isPlaying?tk.accent:tk.borderStrong}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",WebkitTapHighlightColor:"transparent",fontFamily:"inherit"}}
+          title={isPlaying?"Stop preview":"Play preview"}>
+          {isPlaying && itunesLoading
+            ? <span style={{width:8,height:8,borderRadius:"50%",border:"2px solid #fff",borderTopColor:"transparent",animation:"spin 0.7s linear infinite"}}/>
+            : isPlaying
+              ? <span style={{width:10,height:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:2}}>
+                  <span style={{background:"#fff",borderRadius:1}}/><span style={{background:"#fff",borderRadius:1}}/>
+                </span>
+              : <span style={{width:0,height:0,borderStyle:"solid",borderWidth:"5px 0 5px 9px",borderColor:`transparent transparent transparent ${tk.accentDark}`,marginLeft:2}}/>
+          }
+        </button>
       </div>
     );
   };
@@ -700,22 +698,11 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
           </div>
         </footer>
 
-        {/* ── Native audio element for mobile iTunes preview ── */}
+        {/* ── Native audio element — used for both mobile and desktop ── */}
         <audio ref={audioRef} style={{display:"none"}} onEnded={()=>setPlayingId(null)}/>
 
-        {/* ── Hidden YouTube iframe for desktop ── */}
-        {!isMobile && playingId && playingYtId && (
-          <iframe
-            key={playingYtId}
-            src={`https://www.youtube-nocookie.com/embed/${playingYtId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-            style={{position:"fixed",left:"-9999px",top:"-9999px",width:1,height:1,border:"none",pointerEvents:"none",opacity:0}}
-            allow="autoplay; encrypted-media"
-            title="audio"
-          />
-        )}
-
         {/* ── Now playing indicator ── */}
-        {playingId && (playingYtId || isMobile) && (
+        {playingId && (
           <div style={{position:"fixed",bottom:isMobile?16:24,right:isMobile?16:24,zIndex:999,background:tk.surface,borderRadius:14,boxShadow:"0 8px 40px rgba(0,0,0,0.18)",border:`1px solid ${tk.border}`,overflow:"hidden",width:isMobile?280:320}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:tk.accent,gap:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
@@ -736,9 +723,9 @@ ${includecocktail ? `Cocktail Hour (${formatMins(sectionTime("cocktailhour"))}):
             </div>
             <div style={{padding:"8px 14px",background:tk.surface2}}>
               <div style={{fontSize:11,color:tk.textMuted,fontStyle:"italic",textAlign:"center"}}>
-                {isMobile && itunesLoading
+                {itunesLoading
                   ? "Searching for preview…"
-                  : isMobile && !itunesUrl && !itunesLoading
+                  : !itunesUrl && !itunesLoading
                     ? "No preview available for this song"
                     : "Reference recording only — live violin performance at your wedding"}
               </div>
